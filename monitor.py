@@ -47,9 +47,13 @@ def load_targets_from_sheet():
     ).execute()
 
     rows = result.get("values", [])
+    print(f"[DEBUG] スプシ取得行数: {len(rows)}")
+    for i, r in enumerate(rows[:3]):
+        print(f"[DEBUG] 行{i+2}: 列数={len(r)} 内容={r}")
     targets = []
     for row in rows:
         if len(row) < 8:
+            print(f"[DEBUG] スキップ（列数不足 {len(row)}）: {row}")
             continue
         title, acode, ctgid, bid, detect_keyword, detect_condition, active, source_url = row[:8]
         if active.strip().upper() != "TRUE":
