@@ -110,19 +110,29 @@ def save_notified_ids(data: dict):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 # ── Discord通知 ───────────────────────────────────────
-def notify_discord(keyword: str, post: dict, thread_url: str):
+def notify_discord(keyword: str, post: dict, thread_url: str) -> bool:
     message = (
         f"🔔 **キーワード検知: `{keyword}`**\n"
         f"🧵 スレッド: {thread_url}\n"
         f"🔗 投稿URL: {post['url']}\n"
         f"📝 内容（抜粋）: {post['text'][:200]}"
     )
-    try:
-        resp = requests.post(DISCORD_WEBHOOK_URL, json={"content": message}, timeout=10)
-        resp.raise_for_status()
-        print(f"[OK] Discord通知送信: post_id={post['id']}")
-    except Exception as e:
-        print(f"[ERROR] Discord通知失敗: {e}")
+    for attempt in range(3):
+        try:
+            resp = requests.post(DISCORD_WEBHOOK_URL, json={"content": message}, timeout=10)
+            if resp.status_code == 429:
+                retry_after = float(resp.json().get("retry_after", 1))
+                print(f"[WARN] Discord rate limit。{retry_after}秒待機")
+                time.sleep(retry_after + 0.2)
+                continue
+            resp.raise_for_status()
+            print(f"[OK] Discord通知送信: post_id={post['id']}")
+            return True
+        except Exception as e:
+            print(f"[ERROR] Discord通知失敗: {e}")
+            return False
+    print(f"[ERROR] Discord通知失敗（3回リトライ超過）: post_id={post['id']}")
+    return False
 
 # ── メイン処理 ────────────────────────────────────────
 def main():
@@ -162,9 +172,9 @@ def main():
                 continue
 
             if matches_keyword(post["text"], detect_keyword, detect_condition):
-                notify_discord(detect_keyword, post, source_url)
-                notified_ids[notified_key].append(post_id)
-                updated = True
+                if notify_discord(detect_keyword, post, source_url):
+                    notified_ids[notified_key].append(post_id)
+                    updated = True
 
         time.sleep(2)
 
