@@ -76,6 +76,10 @@ def get_posts(thread_url: str) -> list[dict]:
         return []
 
     soup = BeautifulSoup(resp.text, "html.parser")
+    print(f"[DEBUG] HTML先頭500文字: {resp.text[:500]}")
+    # id/class付きタグを列挙（最初の10件）
+    tagged = [(t.name, t.get('id',''), t.get('class','')) for t in soup.find_all(True) if t.get('id') or t.get('class')]
+    print(f"[DEBUG] タグサンプル: {tagged[:10]}")
     posts = []
 
     for item in soup.select(".res-item, .bbs-res, article"):
