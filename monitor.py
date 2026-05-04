@@ -194,8 +194,8 @@ def main():
             if post_id in notified_ids[notified_key]:
                 continue
 
-            # キーワード検知
-            if detect_keyword in post["text"]:
+            # キーワード検知（"*"はワイルドカード=全投稿対象）
+            if detect_keyword == "*" or detect_keyword in post["text"]:
                 notify_discord(webhook_url, detect_keyword, post, thread_url)
                 notified_ids[notified_key].append(post_id)
                 updated = True
