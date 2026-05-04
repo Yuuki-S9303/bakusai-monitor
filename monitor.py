@@ -47,13 +47,9 @@ def load_targets_from_sheet():
     ).execute()
 
     rows = result.get("values", [])
-    print(f"[DEBUG] スプシ取得行数: {len(rows)}")
-    for i, r in enumerate(rows[:3]):
-        print(f"[DEBUG] 行{i+2}: 列数={len(r)} 内容={r}")
     targets = []
     for row in rows:
         if len(row) < 8:
-            print(f"[DEBUG] スキップ（列数不足 {len(row)}）: {row}")
             continue
         title, acode, ctgid, bid, detect_keyword, detect_condition, active, source_url = row[:8]
         if active.strip().upper() != "TRUE":
@@ -76,19 +72,12 @@ def get_posts(thread_url: str) -> list[dict]:
         return []
 
     soup = BeautifulSoup(resp.text, "html.parser")
-    # "res"を含むid/classのタグを抽出
-    res_tags = []
-    for t in soup.find_all(True):
-        tid = t.get('id', '')
-        tcls = ' '.join(t.get('class', []))
-        if 'res' in tid.lower() or 'res' in tcls.lower():
-            res_tags.append((t.name, tid, tcls))
-    print(f"[DEBUG] resタグ一覧: {res_tags[:20]}")
     posts = []
 
-    for item in soup.select(".res-item, .bbs-res, article"):
-        post_id = item.get("id", "")
-        text = item.get_text(separator=" ", strip=True)
+    for item in soup.select("div.res_list_article"):
+        post_id = item.get("id", "")  # 例: "res1", "res286"
+        body = item.select_one(".res_body")
+        text = body.get_text(separator=" ", strip=True) if body else item.get_text(separator=" ", strip=True)
         post_url = f"{thread_url}#{post_id}" if post_id else thread_url
 
         if post_id and text:
