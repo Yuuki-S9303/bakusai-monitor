@@ -76,10 +76,14 @@ def get_posts(thread_url: str) -> list[dict]:
         return []
 
     soup = BeautifulSoup(resp.text, "html.parser")
-    print(f"[DEBUG] HTML先頭500文字: {resp.text[:500]}")
-    # id/class付きタグを列挙（最初の10件）
-    tagged = [(t.name, t.get('id',''), t.get('class','')) for t in soup.find_all(True) if t.get('id') or t.get('class')]
-    print(f"[DEBUG] タグサンプル: {tagged[:10]}")
+    # "res"を含むid/classのタグを抽出
+    res_tags = []
+    for t in soup.find_all(True):
+        tid = t.get('id', '')
+        tcls = ' '.join(t.get('class', []))
+        if 'res' in tid.lower() or 'res' in tcls.lower():
+            res_tags.append((t.name, tid, tcls))
+    print(f"[DEBUG] resタグ一覧: {res_tags[:20]}")
     posts = []
 
     for item in soup.select(".res-item, .bbs-res, article"):
